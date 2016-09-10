@@ -4,11 +4,25 @@
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   Q = require('q');
+  var colors = require('colors');
+  // set theme
+colors.setTheme({
+  silly: 'rainbow',
+  input: 'grey',
+  verbose: 'cyan',
+  prompt: 'grey',
+  info: 'green',
+  data: 'grey',
+  help: 'cyan',
+  warn: 'yellow',
+  debug: 'blue',
+  error: 'red'
+});
+
 
   ldapjs = require('ldapjs');
-
+   console.log('running crowdclient');
   CrowdClient = require('atlassian-crowd-client');
-
   getUidFromFilter = function(filter, attribute) {
     var filters, index, uid;
     if (filter.type === 'equal') {
@@ -40,11 +54,13 @@
       this.createSearchEntry = bind(this.createSearchEntry, this);
       this.crowd = new CrowdClient({
         baseUrl: this.params.crowd.url,
+        debug: this.params.crowd.debug,
         application: {
           name: this.params.crowd.applicationName,
           password: this.params.crowd.applicationPassword
         }
-      });
+      }
+      );
       this.bindDn = ldapjs.parseDN(this.params.ldap.bindDn + ',' + this.params.ldap.dnSuffix);
       this.searchBase = ldapjs.parseDN(this.params.ldap.searchBase + ',' + this.params.ldap.dnSuffix);
     }
@@ -58,6 +74,7 @@
       attributes.displayName = user.displayname;
       attributes.mail = user.email;
       attributes.objectclass = 'person';
+      console.log(colors.green('Create search entry' + user));
       return {
         dn: this.params.ldap.uid + '=' + user.username + ',' + this.searchBase,
         attributes: attributes
@@ -78,6 +95,11 @@
           var deferred, first, promised, rdns, uid, username;
           promised = false;
           deferred = Q.defer();
+          console.log(colors.green('BIND: Crowd search for this: ' + req));
+          console.log(colors.green('BIND: Crowd search for this: ' + res));
+          console.log(colors.yellow('BIND: req.dn equals: ' + req.dn));
+          console.log(colors.yellow('BIND: _this.bindDn equals: ' + _this.bindDn));
+
           deferred.promise.then(function() {
             res.end();
             return next();
@@ -85,6 +107,7 @@
             return next(new ldapjs.InvalidCredentialsError());
           }).done();
           if (req.dn.equals(_this.bindDn)) {
+            console.log("sucess");
             if (req.credentials !== _this.params.ldap.bindPassword) {
               return next(new ldapjs.InvalidCredentialsError());
             }
@@ -99,6 +122,7 @@
               return next(new ldapjs.InvalidCredentialsError());
             }
             username = first[uid].value;
+            console.log(username);
             promised = true;
             Q(_this.crowd.authentication.authenticate(username, req.credentials)).then(function() {
               return deferred.resolve();
@@ -121,6 +145,10 @@
           var deferred, first, promised, rdns, uid, username;
           promised = false;
           deferred = Q.defer();
+          console.log(colors.green('SEARCH request: ' + req));
+          console.log(colors.green('SEARCH response: ' + res));
+          console.log(colors.yellow('SEARCH: req.dn: ' + req.dn));
+          console.log(colors.yellow('SEARCH: searchbase: ' + _this.searchBase));
           deferred.promise.then(function() {
             res.end();
             return next();
