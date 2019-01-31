@@ -6,18 +6,18 @@ server = ldapjs.createServer();
 var config = {
   crowd: {
       applicationPassword: process.env.APP_PWD,
-      url: 'http://127.0.0.1:8095/crowd/',
+      url: process.env.CROWD_URL,
       debug: true,
-      applicationName: 'ldap',
+      applicationName: process.env.APP_NAME,
       sslRootCertificate: null
     },
   ldap: {
     uid: 'uid',
     bindPassword: 'password',
-    dnSuffix: 'dc=crowd',
-    bindDn: 'uid=jzdarsky,ou=users',
-    searchBase: 'ou=users',
-    port: 389
+    dnSuffix: 'o=' + process.env.APP_NAME,
+    bindDn: 'cn=root',
+    searchBase: 'ou=crowd',
+    port: 1389
   }
 };
 
